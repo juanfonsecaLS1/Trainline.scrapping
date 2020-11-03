@@ -5,16 +5,19 @@ library(dplyr)
 library(magrittr)
 library(stringr)
 
+# vector with list of paths
 path.html<-c("https://www.thetrainline.com/train-times/london-to-liverpool",
              "https://www.thetrainline.com/train-times/liverpool-to-manchester",
              "https://www.thetrainline.com/train-times/manchester-to-leeds")
 
-do.call(rbind,lapply(path.html,get.TrainLine.Times))
 
+# Define the function to capture train time data
 get.TrainLine.Times<-function(x){
 
+  # Read the web
   chart_page <- xml2::read_html(x, fill = TRUE)
   
+  # Extract the data from defined nodes
   # Freq per day
   freq_page <- chart_page %>% 
     rvest::html_node(".route-fact-per-day")%>%
@@ -38,6 +41,7 @@ get.TrainLine.Times<-function(x){
     str_extract(.,"\\d+(?=m)")%>%
       as.integer()
   
+  # Transform hours into minutes and calculates a total time
   fast_time<-ifelse(is.na(fast_page.h),0,fast_page.h*60)+fast_page.m
   
   # Slowest time
@@ -53,6 +57,7 @@ get.TrainLine.Times<-function(x){
     str_extract(.,"\\d+(?=m)")%>%
     as.integer()
   
+  # Transform hours into minutes and calculates a total time 
   slow_time<-ifelse(is.na(slow_page.h),0,slow_page.h*60)+slow_page.m
   
   # Aveg time
@@ -67,9 +72,11 @@ get.TrainLine.Times<-function(x){
     rvest::html_text()%>%
     str_extract(.,"\\d+(?=m)")%>%
     as.integer()
-    
+  
+  # Transform hours into minutes and calculates a total time  
   avg_time<-ifelse(is.na(avg_page.h),0,avg_page.h*60)+avg_page.m
   
+  # Prepare a data frame with the results
   results<-data.frame(web=x,
                       freq=freq_page,
                       avg.time=avg_time,
@@ -77,3 +84,7 @@ get.TrainLine.Times<-function(x){
                       fast.time=fast_time)
   return(results)
 }
+
+
+# Process the list
+Train.Times.df<-do.call(rbind,lapply(path.html,get.TrainLine.Times))
